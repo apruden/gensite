@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+	<head>
+		<style type="text/css">
+		#editor {
+			position: relative;
+			height: 600px;
+			width: 100%;
+		}
+		</style>
+	</head>
+	<body>
+		<form method="POST" enctype="multipart/form-data">
+			{% if editable %}
+			<div>
+				<select id="mode" size="1">
+					<option value="ace/mode/css">css</option>
+					<option value="ace/mode/handlebars">handlebars</option>
+					<option value="ace/mode/html">html</option>
+					<option value="ace/mode/javascript">javascript</option>
+					<option value="ace/mode/json">json</option>
+					<option value="ace/mode/less">less</option>
+					<option value="ace/mode/markdown">markdown</option>
+					<option value="ace/mode/sass">sass</option>
+					<option value="ace/mode/svg">svg</option>
+					<option value="ace/mode/text" selected>text</option>
+					<option value="ace/mode/xml">xml</option>
+				</select>
+			</div>
+			<div>
+				<textarea name="asset">{{ content }}</textarea>
+				<div id="editor"></div>
+			</div>
+			{% else %}
+			<div>
+				<input type="file" name="asset"/>
+			</div>
+			{% endif %}
+			<div>
+				<button type="submit">save</button>
+			</div>
+		</form>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<script src="//ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
+		<script>
+			var ta = $('textarea[name="asset"]').hide();
+			var editor = ace.edit("editor");
+			editor.getSession().setUseWorker(false);
+			editor.setTheme("ace/theme/monokai");
+			editor.getSession().setMode("ace/mode/javascript");
+			editor.getSession().setValue(ta.val());
+			editor.getSession().on('change', function() {
+				ta.val(editor.getSession().getValue());
+			});
+
+			$('#mode').on('change', function (ev) {
+				var mode = $('option:selected').attr('value');
+				console.log(mode)
+				editor.getSession().setMode(mode);
+			});
+		</script>
+	</body>
+</html>
+{% endautoescape %}
