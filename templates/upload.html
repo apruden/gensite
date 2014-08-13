@@ -7,6 +7,7 @@
 			position: relative;
 			height: 600px;
 			width: 100%;
+			font-size: 14pt;
 		}
 		</style>
 	</head>
@@ -48,7 +49,7 @@
 			var editor = ace.edit("editor");
 			editor.getSession().setUseWorker(false);
 			editor.setTheme("ace/theme/monokai");
-			editor.getSession().setMode("ace/mode/javascript");
+			editor.getSession().setMode("ace/mode/html");
 			editor.getSession().setValue(ta.val());
 			editor.getSession().on('change', function() {
 				ta.val(editor.getSession().getValue());
