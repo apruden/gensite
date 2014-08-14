@@ -3,7 +3,7 @@ from google.appengine.ext import ndb
 from google.appengine.api import memcache
 
 
-EDITABLE = ['.html', '.css', '.json', '.js', '.txt', '.xml']
+EDITABLE = ['.html', '.css', '.json', '.js', '.txt', '.xml', '.do']
 
 
 MIME_DICT = {
@@ -58,7 +58,7 @@ class AssetHandler(webapp2.RequestHandler):
 		ext = os.path.splitext(path)[1]
 
 		if not ext:
-			path = 'index.html' if path == '/' else '%s.html' % path
+			path = '/index.html' if path == '/' else '%s.html' % path
 			ext = '.html'
 
 		if 'admin' in self.request.GET:
@@ -77,7 +77,7 @@ class AssetHandler(webapp2.RequestHandler):
 		asset = memcache.get(path)
 
 		if not asset:
-			logging.info('cache miss')
+			logging.debug('cache miss')
 			if path.endswith('.html'):
 				t = JINJA_SITE_ENVIRONMENT.get_template(path)
 
@@ -95,14 +95,20 @@ class AssetHandler(webapp2.RequestHandler):
 					self.response.write('Not found')
 					return
 
+
 			if os.environ['CACHE_ENABLED'].lower() != 'false':
-				logging.info('adding to cache')
+				logging.debug('adding to cache')
 				memcache.add(path, asset, 3600)
 
 		self.response.cache_control = 'public'
-		self.response.cache_control.max_age = 300
+		self.response.cache_control.max_age = 48000
 		self.response.headers['Content-Type'] = str(asset.mime)
-		self.response.write(asset.content)
+
+		if ext == '.do':
+			exec(asset.content, {'response': self.response}, {})
+		else:
+			self.response.headers['Content-Type'] = str(asset.mime)
+			self.response.write(asset.content)
 
 	def post(self, path):
 		import zipfile
@@ -110,10 +116,10 @@ class AssetHandler(webapp2.RequestHandler):
 		ext = os.path.splitext(path)[1]
 
 		if not ext:
-			path = 'index.html' if path == '/' else '%s.html' % path
+			path = '/index.html' if path == '/' else '%s.html' % path
 
 		if hasattr(self.request.POST['asset'], 'file'):
-			logging.info('saving file %s', path)
+			logging.debug('saving file %s', path)
 			uploaded = self.request.POST['asset']
 
 			if uploaded.filename.endswith('zip'):
@@ -123,14 +129,14 @@ class AssetHandler(webapp2.RequestHandler):
 
 			asset = Asset(id=path, content=uploaded.file.read(), mime=get_mime(uploaded.filename))
 		else:
-			logging.info('saving content %s', path)
+			logging.debug('saving content %s', path)
 			asset = Asset(id=path, content=str(self.request.POST['asset']), mime=get_mime(path))
 
 		asset.put()
 
 	def _save_zip_files(self, site_zip):
 		for p in site_zip.infolist():
-			logging.info('saving %s', p.filename)
+			logging.debug('saving %s', p.filename)
 			asset = Asset(id= '/%s' % p.filename, content=site_zip.read(p), mime=get_mime(p.filename))
 			asset.put()
 

@@ -5,7 +5,7 @@
 		<style type="text/css">
 		#editor {
 			position: relative;
-			height: 600px;
+			height: 800px;
 			width: 100%;
 			font-size: 14pt;
 		}
@@ -23,6 +23,7 @@
 					<option value="ace/mode/json">json</option>
 					<option value="ace/mode/less">less</option>
 					<option value="ace/mode/markdown">markdown</option>
+					<option value="ace/mode/python">python</option>
 					<option value="ace/mode/sass">sass</option>
 					<option value="ace/mode/svg">svg</option>
 					<option value="ace/mode/text" selected>text</option>
@@ -45,21 +46,24 @@
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 		<script src="//ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
 		<script>
-			var ta = $('textarea[name="asset"]').hide();
-			var editor = ace.edit("editor");
-			editor.getSession().setUseWorker(false);
-			editor.setTheme("ace/theme/monokai");
-			editor.getSession().setMode("ace/mode/html");
-			editor.getSession().setValue(ta.val());
-			editor.getSession().on('change', function() {
-				ta.val(editor.getSession().getValue());
-			});
+			(function() {
+				var ta = $('textarea[name="asset"]').hide();
+				var editor = ace.edit('editor');
 
-			$('#mode').on('change', function (ev) {
-				var mode = $('option:selected').attr('value');
-				console.log(mode)
-				editor.getSession().setMode(mode);
-			});
+				editor.getSession().setUseWorker(false);
+				editor.setTheme('ace/theme/monokai');
+				editor.getSession().setMode('ace/mode/html');
+				editor.getSession().setValue(ta.val());
+				editor.getSession().on('change', function() {
+					ta.val(editor.getSession().getValue());
+				});
+
+				$('#mode').on('change', function (ev) {
+					var mode = $('option:selected').attr('value');
+					console.log(mode)
+					editor.getSession().setMode(mode);
+				});
+			}());
 		</script>
 	</body>
 </html>
