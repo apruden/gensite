@@ -16,4 +16,4 @@ libraries:
   version: latest
 
 env_variables:
-  CACHE_ENABLED: false
+  CACHE_ENABLED: true
