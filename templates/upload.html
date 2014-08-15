@@ -44,6 +44,7 @@
 			</div>
 		</form>
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		{% if editable %}
 		<script src="//ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
 		<script>
 			(function() {
@@ -65,6 +66,7 @@
 				});
 			}());
 		</script>
+		{% endif %}
 	</body>
 </html>
 {% endautoescape %}
