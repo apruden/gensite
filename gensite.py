@@ -73,6 +73,15 @@ class Asset(ndb.Model):
 	mime = ndb.StringProperty()
 
 
+class ConfigHandler(webapp2.RequestHandler):
+	def get(self):
+		global settings
+		found = ndb.Key(Settings, '_settings').get(use_cache=False, use_memcache=False)
+		if found:
+			logging.info('Config refreshed: %s', found)
+			settings = found
+
+
 class AssetHandler(webapp2.RequestHandler):
 	def get(self, path):
 		path, ext = self.get_path()
@@ -135,6 +144,7 @@ class AssetHandler(webapp2.RequestHandler):
 	def edit_form(self, asset_content, ext):
 		user = get_current_user()
 		if not user or user.email() not in settings.editors:
+			logging.warning('user %s not found in editors %s', user.email(), settings.editors)
 			return self.redirect(create_login_url('/'))
 
 		self.response.write(JINJA_ENVIRONMENT.get_template('upload.html').render({
@@ -176,4 +186,6 @@ class AssetHandler(webapp2.RequestHandler):
 			asset.put()
 
 
-application = webapp2.WSGIApplication([('/(.*)', AssetHandler)], debug=True)
+application = webapp2.WSGIApplication([
+	('/config/refresh', ConfigHandler),
+	('/(.*)', AssetHandler)], debug=True)

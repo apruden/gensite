@@ -1,0 +1,4 @@
+cron:
+- description: refresh config
+  url: /config/refresh
+  schedule: every 5 minutes
