@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<h1>{{ name }}</h1>
+		<p>{{ email }}</p>
+		<p>{{ telephone }}</p>
+
+		<div>
+			<h2>Experience</h2>
+			{% for e in experiences %}
+			<div>
+				<p>{{e.position}}</p>
+				<p>{{e.company}}</p>
+				<p>{{e.from}} - {{e.to}}</p>
+				<p>{{e.acomplishments}}</p>
+			</div>
+			{% endfor %}
+		</div>
+
+		<div>
+			<h2>Education</h2>
+			{% for e in educations %}
+			<div>
+				<p>{{e.title}}</p>
+				<p>{{e.institution}}</p>
+				<p>{{e.from}} - {{e.to}}</p>
+			</div>
+			{% endfor %}
+		</div>
+
+		<div>
+			<h2>Skills</h2>
+			<ul>
+			{% for s in skills %}
+			<li>{{s.name}} ({{s.years}} years - {{s.level}})</li>
+			{% endfor %}
+			</ul>
+		</div>
+
+		<div>
+			<h2>Language skills</h2>
+			<ul>
+			{% for s in languages %}
+			<li>{{s.name}} - {{s.level}}</li>
+			{% endfor %}
+			</ul>
+		</div>
+
+		<div>
+			<h2>Certifications</h2>
+			{% for e in certifications %}
+			<div>
+				<p>{{e.title}}</p>
+				<p>{{e.institution}}</p>
+				<p>{{e.date}}</p>
+			</div>
+			{% endfor %}
+		</div>
+	</body>
+</html>
