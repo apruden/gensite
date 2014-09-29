@@ -1,0 +1,56 @@
+{% extends "_layout.html" %}
+{% block head %}
+<style>
+#editor {
+	position: relative;
+	height: 800px;
+	width: 100%;
+	font-size: 14pt;
+}
+</style>
+{% endblock %}
+{% block content %}
+<form method="POST" enctype="multipart/form-data" role="form">
+	<input type="hidden" name="_create" value="{{ create }}"/>
+	<div class="form-group">
+		<select id="mime" name="mime" class="form-control">
+			{% for k, v in mimes.items() %}
+			<option value="{{ v }}" {{'selected' if v == mime else ''}} >{{ k }}</option>
+			{% endfor %}
+		</select>
+	</div>
+	<div class="form-group">
+		<textarea name="asset">{{content}}</textarea>
+		<div id="editor"></div>
+	</div>
+	<button type="submit" class="btn btn-primary">commit</button>
+</form>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="//ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
+<script>
+	(function() {
+		var modes_map = {'text/html': 'html',
+				'text/x-python': 'python',
+				'application/javascript': 'javascript',
+				'text/css': 'css'},
+			ta = $('textarea[name="asset"]').hide(),
+			editor = ace.edit('editor'),
+			mode = modes_map[$('option:selected').attr('value')] || 'text';
+
+		editor.getSession().setUseWorker(false);
+		editor.setTheme('ace/theme/monokai');
+		editor.getSession().setMode('ace/mode/' + mode);
+		editor.getSession().setValue(ta.val());
+		editor.getSession().on('change', function() {
+			ta.val(editor.getSession().getValue());
+		});
+
+		$('#mime').on('change', function (ev) {
+			var mime = $('option:selected').attr('value'),
+				mode = modes_map[mime] || 'text';
+			console.log(mode)
+			editor.getSession().setMode('ace/mode/' + mode);
+		});
+	}());
+</script>
+{% endblock %}

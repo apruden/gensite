@@ -2,12 +2,7 @@ from google.appengine.ext import ndb
 
 
 class Settings(ndb.Expando):
-	pass
-
-
-class AppSetting(ndb.Model):
-	name = ndb.StringProperty()
-	value = ndb.StringProperty()
+	mapping = ndb.JsonProperty()
 
 
 class Site(ndb.Model):
@@ -20,6 +15,7 @@ class Site(ndb.Model):
 class Asset(ndb.Model):
 	content = ndb.BlobProperty()
 	mime = ndb.StringProperty()
+	fullpath = ndb.StringProperty()
 
 
 class DataEntry(ndb.Expando):

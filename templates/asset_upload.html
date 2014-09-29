@@ -1,0 +1,11 @@
+{% extends "_layout.html" %}
+{% block content %}
+<form method="POST" enctype="multipart/form-data" role="form">
+	<input type="hidden" name="_create" value="True" />
+	<div class="form-group">
+		<input type="file" name="asset" class="form-control"/>
+	</div>
+	<button type="submit" class="btn btn-primary">commit</button>
+</form>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+{% endblock %}
