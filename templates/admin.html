@@ -13,9 +13,9 @@
 <form action="/_site/admin/download_release" method="POST" role="form">
 	<div class="form-group">
 		<label for="release">releases</label>
-		<select id="release" name="release" class="form-control">
+		<select id="release" name="release_id" class="form-control">
 			{% for r in releases %}
-			<option value="r.tag_name">r.tag_name</option>
+			<option value="{{r.id}}">{{r.tag_name}} ({{r.target_commitish[:8]}})</option>
 			{% endfor %}
 		</select>
 	</div>
@@ -23,14 +23,14 @@
 </form>
 <h1>Commits</h1>
 <div class="row">
-	<p>Current commit: {{current_sha}}</p>
+	<p>Current commit: {{current_sha[:8]}}</p>
 </div>
 <form action="/_site/admin/fetch" method="POST" role="form">
 	<div class="form-group">
 		<label for="sha">commits</label>
 		<select id="sha" name="sha" class="form-control">
 			{% for c in commits %}
-			<option value="{{c.sha}}">{{c.sha}}</option>
+			<option value="{{c.sha}}">{{c.sha[:8]}}</option>
 			{% endfor %}
 		</select>
 	</div>

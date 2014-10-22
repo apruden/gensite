@@ -9,8 +9,7 @@ default_settings = {
 		'editors': '',
 		'sender': 'alex.prudencio@gmail.com',
 		'webadmin': 'alex@primefactor.solutions',
-		'repo': 'apruden/primefactor_www',
-		'mapping': {}
+		'mapping': '{}'
 }
 
 

@@ -1,4 +1,4 @@
 cron:
 - description: refresh config
-  url: /_site/config/refresh
+  url: /_site/refresh
   schedule: every 5 minutes

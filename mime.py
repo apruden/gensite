@@ -31,8 +31,9 @@ MIME_DICT = {'.html': 'text/html',
 REVERSE_MIME_DICT = dict((v, k) for k, v in MIME_DICT.items())
 
 
-def get_mime(path):
-	return MIME_DICT.get(os.path.splitext(path)[1], 'application/octet-stream')
+def get_mime(path=None, ext=None):
+	ext = ext or os.path.splitext(path)[1]
+	return MIME_DICT.get(ext, 'application/octet-stream')
 
 
 def get_ext(mime):

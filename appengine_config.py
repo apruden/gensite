@@ -12,8 +12,12 @@ def _get_namespace(domain):
 	if mapping is None:
 		namespace_manager.set_namespace('global')
 		settings = ndb.Key(Settings, '_settings').get()
-		mapping = settings.mapping if settings else {}
-		mapping = mapping or {}
+		if not settings:
+			settings = Settings(id='_settings')
+			settings.set_mapping({})
+			settings.put()
+
+		mapping = settings.get_mapping_dict()
 
 	return mapping.get(domain, domain)
 

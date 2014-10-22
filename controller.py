@@ -1,5 +1,6 @@
 import webapp2, jinja2, os, logging, StringIO, zipfile, json, base64, urllib, time
 import mime as mimeutil, config
+from hashlib import sha1
 from model import Asset, Site, Settings, DataEntry
 from git import GitClient
 from google.appengine.ext import ndb
@@ -31,16 +32,24 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 		cache_size=0)
 
 
-def _get_fullpath(path, mime):
+def _extract_zipped_files(site_zip, prefix=''):
+	folder_name = site_zip.infolist()[0].filename
+	return [(_get_path(p.filename.replace(folder_name, ''), prefix), site_zip.read(p), '%s/%s' % (prefix, p.filename.replace(folder_name, '').lstrip('/')), mimeutil.get_mime(p.filename)) for p in site_zip.infolist() if p.file_size]
+
+
+def _get_fullpath(path, mime=None):
 	path = '/%s' % path.lstrip('/')
 
 	if path == '/':
-		path = '/index'
+		path = '/index.html'
 
 	ext = os.path.splitext(path)[1]
 
 	if ext:
-		return path, mimeutil.get_mime(ext)
+		return path, mimeutil.get_mime(ext=ext)
+
+	if not mime:
+		mime = mimeutil.get_mime(ext=ext)
 
 	fullpath = '%s%s' % (path, mimeutil.get_ext(mime))
 
@@ -51,35 +60,75 @@ def _get_path(filename, prefix=''):
 	return '%s/%s' % (prefix, filename.replace('index.html', '').replace('.html', '').replace('.py', '').lstrip('/'))
 
 
-class ConfigHandler(webapp2.RequestHandler):
+class RefreshHandler(webapp2.RequestHandler):
 	def get(self):
-		pass
+		try:
+			res = urlfetch.fetch(url='http://quizwiz.azurewebsites.net/home/ping', method=urlfetch.GET)
+		except Exception, e:
+			logging.info('Error refreshing site %s', e)
 
 
 class AdminHandler(webapp2.RequestHandler):
+
 	def get(self):
+		site = self._get_site()
+		if site.repo:
+			owner, repo = site.repo.split('/')
+			git = GitClient(owner, repo, site.github_token)
+			commits = git.get_repos('/commits')
+			releases = git.get_repos('/releases')
+		else:
+			commits = []
+			releases = []
+
+		self.response.write(JINJA_ENVIRONMENT.get_template('admin.html').render({
+			'releases': releases,
+			'commits': commits,
+			'current_sha': site.current_sha or '',
+			'repo': site.repo or ''}))
+
+	def post(self):
+		site = self._get_site()
+		site.repo = self.request.POST['repo']
+		site.put()
+
+	def _get_site(self):
 		site = ndb.Key(Site, '_site').get()
 
 		if not site:
+			logging.error('Saving site')
 			site = Site(id='_site')
+			site.github_token = ''
 			site.put()
 
-		commits = [] #git.get_repos('/commits')
-		releases = [] #git.get_repos('/releases')
-		self.response.write(JINJA_ENVIRONMENT.get_template('admin.html').render({
-			'releases':releases, 'commits':commits, 'current_sha': site.current_sha, 'repo': site.repo}))
+		return site
 
-	def post(self):
-		pass
+	def download_release(self):
+		release_id = self.request.POST['release_id']
+		site = self._get_site()
+		owner, repo = site.repo.split('/')
+		git = GitClient(owner, repo, site.github_token)
+		release = git.get_repos('releases/%s' % (release_id,))
 
-	def download_release(self, release):
-		owner, repo = config.settings.repo.split('/')
-		git = GitClient(owner, repo)
-		asset = git.get_repos('/releases/asset/%s' % (release,))
+		if 'target_commitish' not in release:
+			logging.error('Got download release: %s', release)
+
+		sha = release['target_commitish']
+		res = git.get(release['zipball_url'], binary=True)
+		res = StringIO.StringIO(res)
+		site_zip = zipfile.ZipFile(res,'r')
+		assets = _extract_zipped_files(site_zip, '')
+		assets = [Asset(id=a[0], content=a[1], fullpath=a[2], mime=a[3]) for a in assets]
+		ndb.put_multi(assets)
+
+		site = self._get_site()
+		site.current_sha = sha
+		site.put()
 
 	def fetch(self):
-		owner, repo = config.settings.repo.split('/')
-		git = GitClient(owner, repo)
+		site = self._get_site()
+		owner, repo = site.repo.split('/')
+		git = GitClient(owner, repo, site.github_token)
 		sha = self.request.get('sha')
 		logging.info('fetching %s', sha)
 		site = ndb.Key(Site, '_site').get()
@@ -90,18 +139,22 @@ class AdminHandler(webapp2.RequestHandler):
 			tree = tree['tree']
 			for f in tree:
 				blob = git.get(f['url'])
-				content = base64.decodestring(blob['content'])
-				fullpath, mime = _get_fullpath(f['path'])
-				assets.append(Asset(id=_get_path(f['path']), content=content, mime=mime, fullpath=fullpath))
-				logging.info('Added asset %s', f['path'])
+				if 'content' in blob:
+					content = base64.decodestring(blob['content'])
+					fullpath, mime = _get_fullpath(f['path'])
+					assets.append(Asset(id=_get_path(f['path']), content=content, mime=mime, fullpath=fullpath))
+					logging.info('Added asset %s', f['path'])
 		else:
-			diff = git.get_repos('/compare/%s:%s...%s:%s' % (owner, current_sha, owner, sha))
+			diff = git.get_repos('/compare/%s:%s...%s:%s' % (owner, site.current_sha, owner, sha))
 			for f in diff['files']:
 				content = git.get(f['contents_url'])
-				content = base64.decodestring(content['content'])
-				fullpath, mime = _get_fullpath(f['filename'])
-				assets.append(Asset(id=_get_path(f['filename']), content=content, mime=mime, fullpath=fullpath))
-				logging.info('Updated asset %s', f['filename'])
+				if 'content' in content:
+					content = base64.decodestring(content['content'])
+					fullpath, mime = _get_fullpath(f['filename'])
+					assets.append(Asset(id=_get_path(f['filename']), content=content, mime=mime, fullpath=fullpath))
+					logging.info('Updated asset %s', f['filename'])
+				else:
+					logging.error('invalid fetch response: %s', content)
 
 		ndb.put_multi(assets)
 		site.current_sha = sha
@@ -128,14 +181,14 @@ class AssetHandler(webapp2.RequestHandler):
 		logging.info('namespaces %s', namespace_manager.get_namespace())
 
 		if '_admin' in self.request.GET:
-			asset = ndb.Key(Asset, path).get()
+			asset = ndb.Key(Asset, path).get(use_cache=False, use_memcache=False)
 			return self._edit_form(path, asset)
 
-		rendered_content = memcache.get(path)
+		rendered_content = memcache.get(path) if '_nocache' not in self.request.GET else None
 
 		if not rendered_content:
 			logging.info('cache miss path %s', path)
-			asset = ndb.Key(Asset, path).get()
+			asset = ndb.Key(Asset, path).get(use_cache=False, use_memcache=False)
 
 			if not asset:
 				self.abort(404)
@@ -162,9 +215,11 @@ class AssetHandler(webapp2.RequestHandler):
 
 	def post(self, path):
 		path = path or '/'
+		path = '/%s' % path.lstrip('/')
 		asset = ndb.Key(Asset, path).get()
 
 		if not asset and not self.request.get('_create'):
+			logging.warning('Asset not found for editing %s', path)
 			self.abort(404)
 
 		if not any(k in self.request.POST for k in ['_delete', '_edit', '_create']):
@@ -186,7 +241,7 @@ class AssetHandler(webapp2.RequestHandler):
 
 			return
 
-		logging.debug('saving content %s', path)
+		logging.info('saving content %s', path)
 		uploaded = None
 
 		if hasattr(self.request.POST['asset'], 'file'):
@@ -211,10 +266,11 @@ class AssetHandler(webapp2.RequestHandler):
 		create = False
 
 		if not asset:
+			logging.info('Creating asset %s', path)
 			create = True
 			asset = Asset()
 
-		_, ext = os.path.splitext(path)
+		_, ext = os.path.splitext(asset.fullpath or '')
 
 		if 'upload' in self.request.GET or ext not in mimeutil.EDITABLE:
 			self.response.write(JINJA_ENVIRONMENT.get_template('asset_upload.html').render({}))
@@ -230,7 +286,7 @@ class AssetHandler(webapp2.RequestHandler):
 		if uploaded is not None:
 			if uploaded.filename.endswith('zip'):
 				site_zip = zipfile.ZipFile(uploaded.file,'r')
-				assets = self._extract_zipped_files(site_zip, path if path != '/' else '')
+				assets = _extract_zipped_files(site_zip, path if path != '/' else '')
 			else:
 				fullpath, mime = _get_fullpath(path, mime)
 				assets = [(path, self.request.get('asset'), fullpath, mime)]
@@ -241,5 +297,18 @@ class AssetHandler(webapp2.RequestHandler):
 		assets = [Asset(id=a[0], content=a[1], fullpath=a[2], mime=a[3]) for a in assets]
 		ndb.put_multi(assets)
 
-	def _extract_zipped_files(self, site_zip, prefix=''):
-		return [(_get_path(p.filename, prefix), site_zip.read(p), '%s/%s' % (prefix, p.filename.lstrip('/')), mimeutil.get_mime(p.filename)) for p in site_zip.infolist()]
+		#for a in assets:
+		#	git.put_repos('contents/%s' % path, message='added file %s from gensite' % path, content=asset.content)
+
+
+#requests.put('https://api.github.com/repos/apruden/primefactor_www/contents/toto.txt?access_token=dcaab52c0f1f61c0e197f7d4dc983c04c5dad70a', data=json.dumps({'message':'test', 'commiter': {'name':'tes', 'email':'toto@test.com'}, 'content': base64.b64encode('tototest')}))
+
+#requests.put('https://api.github.com/repos/apruden/primefactor_www/contents/tata/tete/toto.txt?access_token=dcaab52c0f1f61c0e197f7d4dc983c04c5dad70a', data=json.dumps({'message': 'test', 'commiter': {'name':'tes', 'email':'toto@test.com'}, 'content': base64.b64encode('tototest2'), 'sha': githash('tototest')}))
+
+def githash(data):
+	s = sha1()
+	s.update('blob %u\0' % len(data))
+	s.update(data)
+
+	return s.hexdigest()
+
