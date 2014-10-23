@@ -197,7 +197,9 @@ class AssetHandler(webapp2.RequestHandler):
 				if path not in _code_cache:
 					cobj = compile(asset.content, '', 'exec')
 					_code_cache[path] = cobj
-				exec(_code_cache[path], globals(), {'request': self.request, 'response': self.response})
+				globs = globals()
+				globs.update({'request': self.request, 'response': self.response, 'settings': config.settings})
+				exec _code_cache[path] in globs
 				return
 			elif asset.mime == 'text/html':
 				rendered_content = (self._get_rendered_content(asset.fullpath), asset.mime)
@@ -230,7 +232,9 @@ class AssetHandler(webapp2.RequestHandler):
 				cobj = compile(asset.content, '', 'exec')
 				_code_cache[path] = cobj
 
-			exec _code_cache[path] in globals(), {'request': self.request, 'response': self.response}
+			globs = globals()
+			globs.update({'request': self.request, 'response': self.response, 'settings': config.settings})
+			exec _code_cache[path] in globs
 			return
 
 		if '_delete' in self.request.POST:
