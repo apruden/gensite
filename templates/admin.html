@@ -3,43 +3,28 @@
 <h1>Site Admin</h1>
 <h2>Repo</h2>
 <form method="POST" role="form">
-	<div class="form-group">
-		<label for="repo">repo</label>
-		<input id="repo" type="text" name="repo" value="{{repo}}" class="form-control"/>
-	</div>
-	<button type="submit" class="btn btn-default">save</button>
+  <div class="form-group">
+    <label for="repo">repo</label>
+    <input id="repo" type="text" name="repo" value="{{repo}}" class="form-control"/>
+  </div>
+  <button type="submit" class="btn btn-default">save</button>
 </form>
 <h2>Releases</h2>
-<form action="/_site/admin/download_release" method="POST" role="form">
-	<div class="form-group">
-		<label for="release">releases</label>
-		<select id="release" name="release_id" class="form-control">
-			{% for r in releases %}
-			<option value="{{r.id}}">{{r.tag_name}} ({{r.target_commitish[:8]}})</option>
-			{% endfor %}
-		</select>
-	</div>
-	<button type="submit" class="btn btn-default">publish</button>
-</form>
-<h1>Commits</h1>
-<div class="row">
-	<p>Current commit: {{current_sha[:8]}}</p>
-</div>
-<form action="/_site/admin/fetch" method="POST" role="form">
-	<div class="form-group">
-		<label for="sha">commits</label>
-		<select id="sha" name="sha" class="form-control">
-			{% for c in commits %}
-			<option value="{{c.sha}}">{{c.sha[:8]}}</option>
-			{% endfor %}
-		</select>
-	</div>
-	<button type="submit" class="btn btn-default">fetch</button>
+<form action="/_site/admin/download_commit" method="POST" role="form">
+  <div class="form-group">
+    <label for="commit">commits</label>
+    <select id="commit" name="commit_id" class="form-control">
+      {% for r in commits %}
+      <option value="{{r.sha}}">{{r.sha}}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-default">publish</button>
 </form>
 <h2>Download</h2>
 <form action="/_site/admin/download" method="GET">
-	<button class="btn btn-default">
-		download
-	</button>
+  <button class="btn btn-default">
+    download
+  </button>
 </form>
 {% endblock %}
