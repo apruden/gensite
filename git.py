@@ -14,7 +14,7 @@ class GitClient(object):
     def get_repos(self, url, binary=False):
         url = url.lstrip('/')
         url = '%s/repos/%s/%s/%s?access_token=%s' % (self.git_base, self.owner, self.repo, url, self.token)
-        res = urlfetch.fetch(url=url, method=urlfetch.GET)
+        res = urlfetch.fetch(url=url, method=urlfetch.GET, validate_certificate=True)
 
         if binary:
             return res.content
@@ -26,7 +26,7 @@ class GitClient(object):
 
     def get(self, url, binary=False):
         sep = '?' if '?' not in url else '&'
-        res = urlfetch.fetch(url='%s%saccess_token=%s' % (url, sep, self.token), method=urlfetch.GET)
+        res = urlfetch.fetch(url='%s%saccess_token=%s' % (url, sep, self.token), method=urlfetch.GET, validate_certificate=True)
 
         if not binary:
             return json.loads(res.content)
