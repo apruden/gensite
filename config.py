@@ -8,7 +8,7 @@ default_settings = {
         'cache_enabled': False,
         'editors': '',
         'sender': 'alex.prudencio@gmail.com',
-        'webadmin': 'alex@primefactor.solutions',
+        'webadmin': 'alex@primefactorsolutions.com',
         'mapping': '{}'
         }
 

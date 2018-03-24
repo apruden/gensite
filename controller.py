@@ -44,7 +44,6 @@ def _get_fullpath(path, mime=None):
     if path == '/': path = '/index.html'
     ext = os.path.splitext(path)[1]
     if ext: return path, mimeutil.get_mime(ext=ext)
-    if not mime: mime = mimeutil.get_mime(ext=ext)
     fullpath = '%s%s' % (path, mimeutil.get_ext(mime))
 
     return fullpath, mime
@@ -117,7 +116,7 @@ class AdminHandler(webapp2.RequestHandler):
 
         with zipfile.ZipFile(output, 'w') as zf:
             for a in assets:
-                zf.writestr(a.key.id().lstrip('/'), a.content)
+                zf.writestr(a.fullpath.lstrip('/'), a.content)
 
         self.response.headers['Content-Type'] = 'application/zip'
         self.response.headers['Content-Disposition'] = 'attachment; filename="%s"' % 'site.zip'
@@ -221,7 +220,7 @@ class AssetHandler(webapp2.RequestHandler):
 
         _, ext = os.path.splitext(asset.fullpath or path)
 
-        if 'upload' in self.request.GET or ext not in mimeutil.EDITABLE:
+        if 'upload' in self.request.GET:
             self.response.write(JINJA_ENVIRONMENT.get_template('asset_upload.html').render({}))
         else:
             self.response.write(JINJA_ENVIRONMENT.get_template('asset_edit.html').render({
@@ -237,6 +236,7 @@ class AssetHandler(webapp2.RequestHandler):
                 site_zip = zipfile.ZipFile(uploaded.file,'r')
                 assets = _extract_zipped_files(site_zip, path if path != '/' else '')
             else:
+                mime = mimeutil.get_mime(uploaded.filename)
                 fullpath, mime = _get_fullpath(path, mime)
                 assets = [(path, self.request.get('asset'), fullpath, mime)]
         else:

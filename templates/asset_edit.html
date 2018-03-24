@@ -8,6 +8,11 @@
 	font-size: 14pt;
 }
 </style>
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/codemirror.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/fold/foldgutter.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/dialog/dialog.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/display/fullscreen.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/theme/solarized.css">
 {% endblock %}
 {% block content %}
 <form method="POST" enctype="multipart/form-data" role="form">
@@ -20,36 +25,56 @@
 		</select>
 	</div>
 	<div class="form-group">
-		<textarea name="asset">{{content}}</textarea>
-		<div id="editor"></div>
+		<textarea id="editor" name="asset">{{content}}</textarea>
 	</div>
 	<button type="submit" class="btn btn-primary">commit</button>
 </form>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<script src="//ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/keymap/vim.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/search/searchcursor.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/dialog/dialog.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/fold/foldcode.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/fold/foldgutter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/fold/xml-fold.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/edit/matchbrackets.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/edit/closetag.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/addon/display/fullscreen.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/mode/xml/xml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/mode/htmlmixed/htmlmixed.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/mode/python/python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/mode/css/css.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.36.0/mode/javascript/javascript.js"></script>
 <script>
 	(function() {
-		var modes_map = {'text/html': 'html',
+		var modes_map = {'text/html': 'text/html',
 				'text/x-python': 'python',
 				'application/javascript': 'javascript',
 				'text/css': 'css'},
-			ta = $('textarea[name="asset"]').hide(),
-			editor = ace.edit('editor'),
+			editor = CodeMirror.fromTextArea($('#editor')[0], {
+				mode: 'text/html',
+				theme: 'solarized',
+				keyMap: "vim",
+				matchBrackets: true,
+				showCursorWhenSelecting: true,
+				inputStyle: "contenteditable",
+				lineNumbers: true,
+				autoCloseTags: true,
+				foldGutter: true,
+				gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+				extraKeys: {
+					"F11": function(cm) {
+						cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+					}
+				}
+			});
 			mode = modes_map[$('option:selected').attr('value')] || 'text';
-
-		editor.getSession().setUseWorker(false);
-		editor.setTheme('ace/theme/monokai');
-		editor.getSession().setMode('ace/mode/' + mode);
-		editor.getSession().setValue(ta.val());
-		editor.getSession().on('change', function() {
-			ta.val(editor.getSession().getValue());
-		});
 
 		$('#mime').on('change', function (ev) {
 			var mime = $('option:selected').attr('value'),
 				mode = modes_map[mime] || 'text';
 			console.log(mode)
-			editor.getSession().setMode('ace/mode/' + mode);
+			editor.setOption('mode', mode);
 		});
 	}());
 </script>
