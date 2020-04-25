@@ -1,6 +1,8 @@
-import urllib, base64, json
+import urllib, base64, json, logging
 from google.appengine.api import urlfetch
 import config
+
+logging.getLogger().setLevel(logging.INFO)
 
 class GitClient(object):
 
@@ -13,8 +15,11 @@ class GitClient(object):
 
     def get_repos(self, url, binary=False):
         url = url.lstrip('/')
+        logging.info('fetching %s' % url)
         url = '%s/repos/%s/%s/%s?access_token=%s' % (self.git_base, self.owner, self.repo, url, self.token)
         res = urlfetch.fetch(url=url, method=urlfetch.GET, validate_certificate=True)
+
+        logging.info('response %s' % res.status_code)
 
         if binary:
             return res.content

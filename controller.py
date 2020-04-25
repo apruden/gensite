@@ -7,7 +7,7 @@ from google.appengine.ext import ndb
 from google.appengine.api import memcache, mail, urlfetch, namespace_manager
 from google.appengine.api.users import get_current_user, create_login_url
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 _code_cache = {}
 
@@ -231,6 +231,7 @@ class AssetHandler(webapp2.RequestHandler):
                 'create': create or ''}))
 
     def _save_asset(self, path, content, uploaded=None, mime=None):
+        global _code_cache
         if uploaded is not None:
             if uploaded.filename.endswith('zip'):
                 site_zip = zipfile.ZipFile(uploaded.file,'r')
@@ -245,3 +246,4 @@ class AssetHandler(webapp2.RequestHandler):
 
         assets = [Asset(id=a[0], content=a[1], fullpath=a[2], mime=a[3]) for a in assets]
         ndb.put_multi(assets)
+        _code_cache = {}
